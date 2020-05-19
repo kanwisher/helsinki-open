@@ -1,0 +1,9 @@
+note over browser:
+user enters text and hits submit
+end note
+browser->server: HTTP POST https://fullstack-exampleapp.herokuapp.com/new_note_spa
+server-->browser: returns 201
+note over browser:
+browser executes the event handler
+that renders notes to display
+end note
