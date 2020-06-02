@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
 import './App.css';
 import axios from 'axios'
-
-
-
+import Country from './components/Country'
 
 function App() {
   const [ countries, setCountries ] = useState([])
@@ -34,9 +31,7 @@ function App() {
       )
     } else if (countries.length <= 10) {
       return (
-        <ul>
-            {countries.map((country) => <li key={country.name}>{country.name}</li>)}
-        </ul>
+        countries.map((country) => <Country key={country.name} country={country}/>)
       )
     } else {
       return <p>Too many matches, specify another filter</p> 
@@ -46,7 +41,10 @@ function App() {
   return (
     <>
       <form>
-        <input type="text" value={filterQuery} onChange={(e) => setFilterQuery(e.target.value)} />
+        <label>
+          Find Countries
+          <input type="text" value={filterQuery} onChange={(e) => setFilterQuery(e.target.value)} />
+        </label>
       </form>
       <div className="App">
         {renderCountries(filteredCountries)}
