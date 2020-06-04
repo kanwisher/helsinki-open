@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Persons from './components/Persons'
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
-import axios from 'axios'
+import phonebookService from './services/phonebook'
 
 const App = () => {
   const [ persons, setPersons ] = useState([])
@@ -11,10 +11,18 @@ const App = () => {
   const [ newPhone, setNewPhone ] = useState('')
 
   useEffect(() => {
-    axios.get('http://localhost:3001/persons').then(({data}) => {
-      setPersons(data);
-    })
+    phonebookService.getAll().then((data) => setPersons(data))
   }, [])
+
+  const deleteClicked = (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete?");
+
+    if (confirmDelete) {
+      phonebookService.destroy(id).then((data) => {
+        setPersons(persons.filter((person) => person.id !== id));
+      })
+    }
+  }
 
   return (
     <div>
@@ -29,7 +37,7 @@ const App = () => {
           setPersons={setPersons}
         />
       <h2>Numbers</h2>
-        <Persons persons={persons} filter={filter} />
+        <Persons persons={persons} filter={filter} deleteClicked={deleteClicked}/>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import React from 'react'
+import phonebookService from '../services/phonebook'
 
 
 
@@ -7,17 +8,22 @@ const PersonForm = ({ newName, newPhone, setNewName, setNewPhone, persons, setPe
   const addPerson = (e) => {
     e.preventDefault()
     const trimmedName = newName.trim();
-    const nameExists = persons.find(({ name }) => name.toLowerCase() === trimmedName.toLowerCase())
+    const existingUser = persons.find(({ name }) => name.toLowerCase() === trimmedName.toLowerCase())
     const newPerson = {
       name: trimmedName,
       phone: newPhone
     }
 
     setNewName('')
-    if (nameExists) {
-      return alert(`${nameExists.name} exists already`)
+    if (existingUser) {
+      const replaceNumber = window.confirm(`${existingUser.name} is already added to phonebook, replace the old number with a new one?`)
+      if (replaceNumber) {
+        const updatedUser = { ...existingUser, phone: newPhone }
+        phonebookService.update(existingUser.id, updatedUser).then((data) => setPersons(persons.map((person) => person.id !== existingUser.id ? person : data)))
+      }
+    } else {
+     phonebookService.create(newPerson).then(data => setPersons([...persons, data]))
     }
-    setPersons([...persons, newPerson])
   }
 
   return (
