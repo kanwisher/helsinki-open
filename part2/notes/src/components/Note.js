@@ -3,7 +3,7 @@ import React from 'react'
 const Note = ({ note: { id, content, important }, toggleImportance }) => {
   const label = important ? "set not important" : "set important";
   return (
-    <li>
+    <li className='note'>
         {content}
         <button onClick={() => toggleImportance(id)}>{label}</button>
     </li>

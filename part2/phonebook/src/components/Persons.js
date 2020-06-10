@@ -6,7 +6,9 @@ const filteredPersons = persons.filter((person) => person.name.toLowerCase().inc
 
   return (
     <ul>
-      {filteredPersons.map(person => <Person key={person.name} person={person} deleteClicked={deleteClicked} />)}
+      {filteredPersons.length ?
+        filteredPersons.map(person => <Person key={person.name} person={person} deleteClicked={deleteClicked} />)
+        : 'Add your first user!'}
     </ul>
   )
 }
