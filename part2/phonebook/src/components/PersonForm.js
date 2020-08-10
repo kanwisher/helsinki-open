@@ -31,9 +31,18 @@ const PersonForm = ({ newName, newPhone, setNewName, setNewPhone, persons, setPe
         setTimeout(() => setMessage(null), 2000)
       }
     } else {
-     phonebookService.create(newContact).then(data => setPersons([...persons, data]));
-     setMessage({content: `Added ${newContact.name}`, type: "success"})
-     setTimeout(() => setMessage(null), 2000)
+     phonebookService.create(newContact).then(data => {
+       setPersons([...persons, data])
+       
+       setMessage({content: `Added ${newContact.name}`, type: "success"})
+       
+       setTimeout(() => setMessage(null), 2000)
+      })
+      .catch((e) => {
+        console.log('here!', e)
+        setMessage({ content: e.response.data.error, type: 'error' })
+        setTimeout(() => setMessage(null), 2000)
+      })
     }
   }
 

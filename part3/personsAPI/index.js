@@ -18,10 +18,6 @@ const morganCustom = morgan(function (tokens, req, res) {
   ].join(' ')
 })
 
-function PhoneBookError(code, message, error) {
-  return { code, message, error }
-}
-
 app.use(morganCustom)
 
 app.get('/api/persons', async (req, res) => {
@@ -29,31 +25,35 @@ app.get('/api/persons', async (req, res) => {
   res.json(contacts)
 })
 
-app.post('/api/persons', async (req, res) => {
+app.post('/api/persons', async (req, res, next) => {
   const { name, number } = req.body
-  if (!name || !number) {
-    res.sendStatus(400)
-  } else {
-    const existingContact = await Contact.find({ name })
-    
-    if (existingContact.length) {
-      res.status(409).json( { error: `${name} already exists`})
+  try {
+    if (!name || !number) {
+      res.sendStatus(400)
     } else {
-      const newContact = new Contact({
-        name,
-        number
-      })
-      const savedContact = await newContact.save()
-      res.status(201).json(savedContact)
+      const existingContact = await Contact.find({ name })
+      
+      if (existingContact.length) {
+        res.status(409).json( { error: `${name} already exists`})
+      } else {
+        const newContact = new Contact({
+          name,
+          number
+        })
+        const savedContact = await newContact.save()
+        res.status(201).json(savedContact)
+      }
     }
-   }
+  } catch (e) {
+    next(e)
+  }
 })
 
 app.put('/api/persons/:id', async (req, res) => {
   const existingContact = await Contact.findById(req.params.id)
   existingContact.number = req.body.number
   await existingContact.save()
-  res.status(200).json(existingContact);
+  res.status(200).json(existingContact)
 })
 
 
@@ -63,11 +63,10 @@ app.get('/api/persons/:id', async (req, res, next) => {
     if (existingContact) {
       res.json(existingContact)
     } else {
-     res.sendStatus(404)
+      res.sendStatus(404)
     }
   }  catch(e) {
-    const error = new PhoneBookError(400, 'malformed id', e);
-    next(error);
+    next(e)
   }
 })
 
@@ -78,7 +77,7 @@ app.delete('/api/persons/:id', async (req, res) => {
 })
 
 app.get('/info', async (req, res) => {
-  const contactCount = await Contact.countDocuments({});
+  const contactCount = await Contact.countDocuments({})
   res.send(`<p>Phonebook has info for ${contactCount} people</p><p>${new Date()}`)
 })
 
@@ -87,9 +86,13 @@ const unknownRoute = (request, response) => {
 }
 app.use(unknownRoute) // will hit if no endpoint matched
 
-const errorRoute = ({ code, message, error }, req, res, next) => {
-  console.log('handled exception in errorRoute:', error)
-  res.status(code).send({ error: message})
+const errorRoute = (error, req, res) => {
+  console.error(error.message)
+  if (error.name === 'CastError') {
+    return res.status(400).send({ error: 'malformed id' })
+  } else if (error.name === 'ValidationError') {
+    return res.status(400).json({ error: error.message })
+  }
 }
 
 app.use(errorRoute) // will hit if `next` is called with an argument
