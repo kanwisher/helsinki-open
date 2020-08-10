@@ -9,9 +9,12 @@ const PersonForm = ({ newName, newPhone, setNewName, setNewPhone, persons, setPe
     e.preventDefault()
     const trimmedName = newName.trim();
     const existingUser = persons.find(({ name }) => name.toLowerCase() === trimmedName.toLowerCase())
-    const newPerson = {
+    if (!trimmedName || !newPhone) {
+      return setMessage({content: `All fields are required`, type: "error"})
+    }
+    const newContact = {
       name: trimmedName,
-      phone: newPhone
+      number: newPhone
     }
 
     setNewName('')
@@ -19,14 +22,17 @@ const PersonForm = ({ newName, newPhone, setNewName, setNewPhone, persons, setPe
     if (existingUser) {
       const replaceNumber = window.confirm(`${existingUser.name} is already added to phonebook, replace the old number with a new one?`)
       if (replaceNumber) {
-        const updatedUser = { ...existingUser, phone: newPhone }
-        phonebookService.update(existingUser.id, updatedUser).then((data) => setPersons(persons.map((person) => person.id !== existingUser.id ? person : data)))
-        setMessage({content: `Updated ${newPerson.name}'s phone number`, type: "success"})
+        const updatedUser = { ...existingUser, number: newPhone }
+        phonebookService.update(existingUser.id, updatedUser).then((data) => {
+          console.log(data)
+          setPersons(persons.map((person) => person.id !== existingUser.id ? person : data))
+        })
+        setMessage({content: `Updated ${newContact.name}'s phone number`, type: "success"})
         setTimeout(() => setMessage(null), 2000)
       }
     } else {
-     phonebookService.create(newPerson).then(data => setPersons([...persons, data]))
-     setMessage({content: `Added ${newPerson.name}`, type: "success"})
+     phonebookService.create(newContact).then(data => setPersons([...persons, data]));
+     setMessage({content: `Added ${newContact.name}`, type: "success"})
      setTimeout(() => setMessage(null), 2000)
     }
   }

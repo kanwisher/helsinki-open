@@ -12,6 +12,10 @@ const App = () => {
   const [ newPhone, setNewPhone ] = useState('')
   const [ message, setMessage ] = useState(null);
 
+  const popMessage = (message = {}, time = 2000) => {
+    setMessage(message)
+    setTimeout(() => setMessage(null), time)
+  }
   useEffect(() => {
     phonebookService.getAll().then((data) => setPersons(data))
   }, [])
@@ -23,12 +27,10 @@ const App = () => {
       phonebookService.destroy(id).then((data) => {
         console.log(data);
         setPersons(persons.filter((person) => person.id !== id));
-        setMessage({content: `Deleted user`, type: "success"})
-        setTimeout(() => setMessage(null), 2000)
+        popMessage({content: `Deleted user`, type: "success"})
       }).catch((data) => {
         setPersons(persons.filter((person) => person.id !== id));
-        setMessage({content: `User was already deleted.`, type: "error"})
-        setTimeout(() => setMessage(null), 2000)
+        popMessage({content: `User was already deleted.`, type: "error"})
       })
     }
   }
