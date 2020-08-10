@@ -1,9 +1,12 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
 const cors = require('cors')
+const Contact = require('./models/contact')
 app.use(cors())
 app.use(express.json())
+app.use(express.static('build'))
 const morganCustom = morgan(function (tokens, req, res) {
   return [
     tokens.method(req, res),
@@ -15,74 +18,81 @@ const morganCustom = morgan(function (tokens, req, res) {
   ].join(' ')
 })
 
+function PhoneBookError(code, message, error) {
+  return { code, message, error }
+}
+
 app.use(morganCustom)
-let persons = [
-  {
-      "name": "David Kanwisher",
-      "phone": "(980) 267-5908",
-      "id": 2
-  },
-  {
-      "name": "Mirsada Kanwisher",
-      "phone": "999-999-9999",
-      "id": 3
-  },
-  {
-      "name": "David Duck",
-      "phone": "111-111-1111",
-      "id": 4
-  },
-  {
-      "name": "Lindsay Kanwisher",
-      "phone": "444-444-4444",
-      "id": 5
-  }
-]
 
-
-app.get('/api/persons', (req, res) => {
-  res.json(persons)
+app.get('/api/persons', async (req, res) => {
+  const contacts = await Contact.find({})
+  res.json(contacts)
 })
 
-app.post('/api/persons', (req, res) => {
-  const body = req.body
-  body.id = Math.floor((Math.random() * 900000) + 1)
-  if (!body.name || !body.phone) {
+app.post('/api/persons', async (req, res) => {
+  const { name, number } = req.body
+  if (!name || !number) {
     res.sendStatus(400)
   } else {
-    const exists = persons.some((person) => person.name.toLowerCase() === body.name.toLowerCase());
-    if (exists) {
-      res.status(409).json( { error: `${body.name} already exists`});
+    const existingContact = await Contact.find({ name })
+    
+    if (existingContact.length) {
+      res.status(409).json( { error: `${name} already exists`})
     } else {
-      persons.push(body);
-      res.sendStatus(201)
+      const newContact = new Contact({
+        name,
+        number
+      })
+      const savedContact = await newContact.save()
+      res.status(201).json(savedContact)
     }
-  }
+   }
+})
 
+app.put('/api/persons/:id', async (req, res) => {
+  const existingContact = await Contact.findById(req.params.id)
+  existingContact.number = req.body.number
+  await existingContact.save()
+  res.status(200).json(existingContact);
 })
 
 
-app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  const person = persons.find((person) => person.id === id)
-
-  if (person) {
-    res.json(person)
-  } else {
-    res.sendStatus(404)
+app.get('/api/persons/:id', async (req, res, next) => {
+  try {
+    const existingContact = await Contact.findById(req.params.id)
+    if (existingContact) {
+      res.json(existingContact)
+    } else {
+     res.sendStatus(404)
+    }
+  }  catch(e) {
+    const error = new PhoneBookError(400, 'malformed id', e);
+    next(error);
   }
 })
 
-app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  persons = persons.filter((person) => person.id !== id)
+app.delete('/api/persons/:id', async (req, res) => {
+  await Contact.findByIdAndDelete(req.params.id)
 
   res.sendStatus(204)
 })
 
-app.get('/info', (req, res) => {
-  res.send(`<p>Phonebook has info for ${persons.length} people</p><p>${new Date()}`)
+app.get('/info', async (req, res) => {
+  const contactCount = await Contact.countDocuments({});
+  res.send(`<p>Phonebook has info for ${contactCount} people</p><p>${new Date()}`)
 })
+
+const unknownRoute = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+app.use(unknownRoute) // will hit if no endpoint matched
+
+const errorRoute = ({ code, message, error }, req, res, next) => {
+  console.log('handled exception in errorRoute:', error)
+  res.status(code).send({ error: message})
+}
+
+app.use(errorRoute) // will hit if `next` is called with an argument
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
