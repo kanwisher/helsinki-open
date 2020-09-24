@@ -1,7 +1,8 @@
+require('dotenv').config()
 const app = require('./app')
 const logger = require('./utils/logger')
 
-const PORT = 3003
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`)
 })
