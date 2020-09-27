@@ -24,11 +24,11 @@ const initialBlogs = [
 beforeEach(async () => {
   await Blog.deleteMany({})
 
-  let blogObject = new Blog(initialBlogs[0])
-  await blogObject.save()
-
-  blogObject = new Blog(initialBlogs[1])
-  await blogObject.save()
+  for (const blog of initialBlogs) {
+    const blogObject = new Blog(blog)
+    // eslint-disable-next-line no-await-in-loop
+    await blogObject.save()
+  }
 })
 
 test('api returns json response', async () => {
@@ -49,6 +49,61 @@ test('the first blog is titled about HTML', async () => {
 
   expect(response.body[0].title).toBe('HTML is easy')
 })
+
+test('a valid note can be added', async () => {
+  const blogObject = {
+    title: 'brand spankin new',
+    author: 'djk',
+    url: 'www.com',
+    likes: 2
+  }
+
+  await api
+      .post('/api/blog')
+      .send(blogObject)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+  const response = await api.get('/api/blog')
+  const titles = response.body.map((blog) => blog.title)
+  expect(response.body).toHaveLength(initialBlogs.length + 1)
+  expect(titles).toContain('brand spankin new')
+
+})
+
+test('_id field should be id', async () => {
+  const response = await api.get('/api/blog')
+  expect(response.body[0].id).toBeDefined();
+})
+
+test('only blogs with required keys can be added', async () => {
+  const blogObject = {
+    // Missing data
+  }
+
+  await api
+    .post('/api/blog')
+    .send(blogObject)
+    .expect(400)
+
+  const response = await api.get('/api/blog')
+  expect(response.body).toHaveLength(initialBlogs.length)
+})
+
+test('if likes are ommited, they default to zero', async () => {
+  const blogObject = {
+    title: 'missing likes',
+    author: 'djk',
+    url: 'www.com'
+  }
+
+  const response = await api
+    .post('/api/blog')
+    .send(blogObject)
+
+  expect(response.body.likes).toBe(0)
+})
+
 
 afterAll(() => {
   mongoose.connection.close()

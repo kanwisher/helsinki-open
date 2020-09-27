@@ -1,22 +1,22 @@
+/* eslint-disable callback-return */
 const router = require('express').Router()
 const Blog = require('../models/blog')
 
-router.get('/', (request, response) => {
-  Blog
-    .find({})
-    .then(blogs => {
-      response.json(blogs)
-    })
+router.get('/', async (req, res) => {
+  const blogs = await Blog.find({})
+  res.json(blogs)
 })
 
-router.post('/', (request, response) => {
-  const blog = new Blog(request.body)
+router.post('/', async (req, res, next) => {
 
-  blog
-    .save()
-    .then(result => {
-      response.status(201).json(result)
-    })
+  const blog = new Blog(req.body)
+  try {
+    const result = await blog.save();
+    res.status(201).json(result)
+  } catch (err) {
+    err.statusCode = 400
+    next(err)
+  }
 })
 
 module.exports = router
