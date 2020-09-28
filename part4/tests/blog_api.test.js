@@ -1,4 +1,3 @@
-const { TestScheduler } = require('jest')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
@@ -104,6 +103,37 @@ test('if likes are ommited, they default to zero', async () => {
   expect(response.body.likes).toBe(0)
 })
 
+test('delete should work ', async () => {
+  const response = await api.get('/api/blog');
+  const startingBlogCount = response.body.length
+  const blog = response.body[0]
+
+  await api
+    .delete(`/api/blog/${blog.id}`)
+    .expect(204)
+
+  const newResponse = await api.get('/api/blog');
+  const endingBlogCount = newResponse.body.length
+
+  expect(endingBlogCount).toBe(startingBlogCount - 1)
+})
+
+test('can update', async () => {
+  const response = await api.get('/api/blog')
+  const blog = response.body[0]
+  const originalLikes = blog.likes
+  blog.likes += 1
+
+  await api
+    .put(`/api/blog/${blog.id}`)
+    .send(blog)
+    .expect(204)
+
+  const newResponse = await api.get('/api/blog')
+  const updatedBlog = newResponse.body.find(b => b.id === blog.id)
+
+  expect(updatedBlog.likes).toBe(originalLikes + 1)
+})
 
 afterAll(() => {
   mongoose.connection.close()
